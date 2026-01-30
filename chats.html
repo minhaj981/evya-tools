@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Messenger Chat Generator</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        :root {
+            --ms-bg: #ffffff;
+            --ms-blue: #0084ff;
+            --ms-grey: #e4e6eb;
+            --nav-bg: #242526;
+            --input-bg: #f0f2f5;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #050505;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            color: white;
+        }
+
+        /* --- NAVBAR --- */
+        .custom-navbar {
+            width: 100%;
+            background-color: var(--nav-bg);
+            display: flex;
+            justify-content: center;
+            border-bottom: 1px solid #3e4042;
+            margin-bottom: 20px;
+        }
+        .nav-link {
+            color: #b0b3b8;
+            text-decoration: none;
+            padding: 16px 20px;
+            font-weight: 600;
+            font-size: 14px;
+        }
+        .nav-link.active { color: #2e89ff; border-bottom: 3px solid #2e89ff; }
+
+        /* --- EDITOR --- */
+        .editor-container {
+            background: #242526;
+            padding: 20px;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 500px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            box-shadow: 0 12px 28px rgba(0,0,0,0.4);
+            margin-bottom: 30px;
+        }
+        .full-width { grid-column: span 2; }
+        label { font-size: 12px; color: #b0b3b8; margin-bottom: 4px; display: block; }
+        input, textarea, select {
+            width: 100%;
+            padding: 10px;
+            border-radius: 6px;
+            border: 1px solid #4e4f50;
+            background: #3a3b3c;
+            color: white;
+            box-sizing: border-box;
+        }
+
+        .btn {
+            padding: 12px;
+            border: none;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+            color: white;
+        }
+
+        /* --- MESSENGER PREVIEW --- */
+        #capture-area {
+            width: 375px;
+            background-color: var(--ms-bg);
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            color: black;
+            padding-bottom: 10px;
+        }
+
+        .ms-header {
+            padding: 10px 12px;
+            display: flex;
+            align-items: center;
+            border-bottom: 1px solid #e5e5e5;
+            background: white;
+        }
+        .back-icon { font-size: 24px; margin-right: 12px; color: var(--ms-blue); }
+        .header-pic { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; margin-right: 10px; }
+        .header-info h4 { margin: 0; font-size: 16px; font-weight: 700; color: #050505; }
+        .header-info p { margin: 0; font-size: 13px; color: #65676b; }
+        .header-actions { margin-left: auto; display: flex; gap: 18px; color: var(--ms-blue); font-size: 18px; }
+
+        .ms-content {
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            min-height: 350px;
+        }
+        .timestamp {
+            text-align: center;
+            font-size: 11px;
+            color: #65676b;
+            text-transform: uppercase;
+            margin: 15px 0 8px 0;
+            font-weight: 600;
+        }
+
+        .msg-row { display: flex; align-items: flex-end; gap: 8px; max-width: 85%; margin-bottom: 2px; }
+        .msg-row.right { align-self: flex-end; flex-direction: row-reverse; max-width: 75%; }
+        
+        /* The dynamic class for the chat profile pic */
+        .chat-profile-pic { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; }
+        
+        .bubble {
+            padding: 8px 12px;
+            border-radius: 18px;
+            font-size: 15px;
+            line-height: 1.4;
+            word-wrap: break-word;
+        }
+        .left .bubble { background-color: var(--ms-grey); color: #050505; border-bottom-left-radius: 4px; }
+        .right .bubble { background-color: var(--ms-blue); color: white; border-bottom-right-radius: 4px; }
+
+        .ms-action-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 10px; }
+        .action-btn {
+            background: #f0f2f5;
+            padding: 8px;
+            border-radius: 6px;
+            text-align: center;
+            font-size: 13px;
+            font-weight: 600;
+            color: #050505;
+        }
+
+        .ms-footer { padding: 8px 12px; display: flex; align-items: center; gap: 14px; }
+        .footer-left-icons { display: flex; gap: 15px; color: var(--ms-blue); font-size: 20px; }
+        .input-pill { flex: 1; background: var(--input-bg); padding: 9px 15px; border-radius: 20px; color: #8a8d91; font-size: 15px; }
+        .footer-right-icons { color: var(--ms-blue); font-size: 20px; display: flex; gap: 12px; }
+
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+
+<nav class="custom-navbar">
+    <a href="index.html" class="nav-link">Comment Generator</a>
+    <a href="fb-review.html" class="nav-link">Review Generator</a>
+    <a href="chat.html" class="nav-link active">Chat Generator</a>
+</nav>
+
+<div class="editor-container">
+    <h2 class="full-width" style="margin:0;">Messenger Generator</h2>
+    
+    <div class="full-width">
+        <label>Name</label>
+        <input type="text" id="headerName" value="Ashraf Sejan" oninput="updateHeader()">
+    </div>
+
+    <div>
+        <label>Image Method</label>
+        <select id="imageMethod" onchange="toggleImageInput()">
+            <option value="upload">Upload File</option>
+            <option value="url">Image URL</option>
+        </select>
+    </div>
+    <div>
+        <label>Profile Action</label>
+        <input type="file" id="imageFile" accept="image/*" onchange="loadPreviewFile(event)">
+        <input type="text" id="imageUrl" class="hidden" placeholder="Paste URL..." oninput="loadPreviewUrl()">
+    </div>
+
+    <div>
+        <label>Sender</label>
+        <select id="senderType">
+            <option value="left">Them (Grey)</option>
+            <option value="right">Me (Blue)</option>
+        </select>
+    </div>
+    <div>
+        <label>Timestamp</label>
+        <input type="text" id="timeInput" placeholder="JAN 15 AT 1:40 PM">
+    </div>
+
+    <div class="full-width">
+        <label>Message Content</label>
+        <textarea id="msgInput" rows="2"></textarea>
+    </div>
+
+    <button class="btn" style="background:#0084ff;" onclick="addMessage()">Add Message</button>
+    <button class="btn" style="background:#42b72a;" onclick="downloadChat()">Download PNG</button>
+</div>
+
+<div id="capture-area">
+    <div class="ms-header">
+        <div class="back-icon">‹</div>
+        <img class="header-pic" id="pHeader" src="https://i.pravatar.cc/100?u=ashraf" alt="">
+        <div class="header-info">
+            <h4 id="prevName">Ashraf Sejan</h4>
+            <p>+ Add details and labels</p>
+        </div>
+        <div class="header-actions"><span>$</span> <span>ⓘ</span></div>
+    </div>
+
+    <div class="ms-content" id="chatbox">
+        </div>
+
+    <div class="ms-action-grid">
+        <div class="action-btn">$ Create order</div>
+        <div class="action-btn">👤 Mark as lead</div>
+    </div>
+
+    <div class="ms-footer">
+        <div class="footer-left-icons"><span><img src="four-circle.png" alt="" width="24" height="24"></span> <span><img src="camera.png" alt="" width="24" height="24"></span> <span><img src="gallery.png" alt="" width="24" height="24"></span> <span><img src="chat.png" alt="" width="24" height="24"></span></div>
+        <div class="input-pill">Aa</div>
+        <div class="footer-right-icons"><span><img width="32" height="32" src="https://img.icons8.com/sf-regular-filled/48/228BE6/facebook-like.png" alt="facebook-like"/></span></div>
+    </div>
+</div>
+
+<script>
+    function updateHeader() {
+        document.getElementById('prevName').textContent = document.getElementById('headerName').value;
+    }
+
+    function toggleImageInput() {
+        const method = document.getElementById('imageMethod').value;
+        document.getElementById('imageFile').classList.toggle('hidden', method === 'url');
+        document.getElementById('imageUrl').classList.toggle('hidden', method === 'upload');
+    }
+
+    // Function to sync all profile pictures in the chat at once
+    function syncAllProfilePics(newSrc) {
+        document.getElementById('pHeader').src = newSrc;
+        const chatPics = document.querySelectorAll('.chat-profile-pic');
+        chatPics.forEach(img => img.src = newSrc);
+    }
+
+    function loadPreviewUrl() {
+        const url = document.getElementById('imageUrl').value;
+        if(url) syncAllProfilePics(url);
+    }
+
+    function loadPreviewFile(event) {
+        const reader = new FileReader();
+        reader.onload = function() {
+            syncAllProfilePics(reader.result);
+        }
+        reader.readAsDataURL(event.target.files[0]);
+    }
+
+    function addMessage() {
+        const text = document.getElementById('msgInput').value;
+        const type = document.getElementById('senderType').value;
+        const time = document.getElementById('timeInput').value;
+        const chatbox = document.getElementById('chatbox');
+        const currentPhoto = document.getElementById('pHeader').src;
+
+        if (time.trim()) {
+            const tDiv = document.createElement('div');
+            tDiv.className = 'timestamp';
+            tDiv.textContent = time;
+            chatbox.appendChild(tDiv);
+        }
+
+        if (text.trim()) {
+            const row = document.createElement('div');
+            row.className = `msg-row ${type}`;
+            
+            let html = '';
+            if(type === 'left') {
+                // We use a specific class 'chat-profile-pic' so they all sync together
+                html += `<img class="chat-profile-pic" src="${currentPhoto}">`;
+            }
+            html += `<div class="bubble">${text}</div>`;
+            
+            row.innerHTML = html;
+            row.onclick = function() { this.remove(); };
+            chatbox.appendChild(row);
+        }
+        
+        document.getElementById('msgInput').value = '';
+        document.getElementById('timeInput').value = '';
+    }
+
+    function downloadChat() {
+        html2canvas(document.querySelector("#capture-area"), {
+            scale: 3,
+            useCORS: true,
+            backgroundColor: "#ffffff"
+        }).then(canvas => {
+            const link = document.createElement('a');
+            link.download = 'messenger-synced.png';
+            link.href = canvas.toDataURL();
+            link.click();
+        });
+    }
+</script>
+
+</body>
+</html>

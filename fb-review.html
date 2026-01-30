@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FB Review Preview Generator</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        :root {
+            --bg-color: #18191a;
+            --card-bg: #242526;
+            --text-main: #e4e6eb;
+            --text-secondary: #b0b3b8;
+            --input-bg: #3a3b3c;
+            --accent: #2e89ff;
+            --nav-bg: #242526;
+            --nav-text: #b0b3b8;
+            --nav-active: #2e89ff;
+            --nav-hover: #3a3b3c;
+        }
+
+        body {
+            font-family: "Segoe UI Historic", "Segoe UI", Helvetica, Arial, sans-serif;
+            background-color: #050505;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            margin: 0;
+            -webkit-font-smoothing: antialiased;
+        }
+        .custom-navbar {
+        width: 100%;
+        background-color: var(--nav-bg);
+        display: flex;
+        justify-content: center;
+        padding: 0;
+        margin: 0 0 30px 0;
+        border-bottom: 1px solid #3e4042;
+        font-family: "Segoe UI", Helvetica, Arial, sans-serif;
+    }
+
+    .nav-link {
+        color: var(--nav-text);
+        text-decoration: none;
+        padding: 16px 24px;
+        font-weight: 600;
+        font-size: 15px;
+        transition: all 0.2s ease;
+        border-bottom: 3px solid transparent;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .nav-link:hover {
+        background-color: var(--nav-hover);
+        color: #e4e6eb;
+    }
+
+    /* Use the 'active' class on the link for the current page */
+    .nav-link.active {
+        color: var(--nav-active);
+        border-bottom-color: var(--nav-active);
+    }
+
+        .editor-container {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 30px;
+            width: 100%;
+            max-width: 500px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            box-shadow: 0 12px 28px rgba(0,0,0,0.4);
+        }
+
+        .full-width { grid-column: span 2; }
+        label { display: block; font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 4px; }
+        input, textarea, select {
+            width: 100%;
+            padding: 10px;
+            border-radius: 6px;
+            border: 1px solid #4e4f50;
+            background: var(--input-bg);
+            color: white;
+            box-sizing: border-box;
+        }
+
+        .btn-download {
+            grid-column: span 2;
+            padding: 12px;
+            background-color: var(--accent);
+            border: none;
+            border-radius: 6px;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+
+        /* REVIEW PREVIEW AREA */
+        #capture-area {
+            background-color: var(--bg-color);
+            padding: 20px;
+            width: 550px;
+        }
+
+        .fb-review-card {
+            background-color: var(--card-bg);
+            border-radius: 8px;
+            padding: 12px 16px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .header {
+            display: flex;
+            gap: 12px;
+            align-items: flex-start;
+            margin-bottom: 12px;
+            position: relative;
+        }
+
+        .profile-pic {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+
+        .header-text {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .name-row {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 4px;
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--text-main);
+            padding-right: 30px; /* Space for the three dots */
+        }
+
+        .recommends-tag {
+            color: var(--text-secondary);
+            font-weight: 400;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .business-name {
+            color: var(--text-main);
+            font-weight: 600;
+        }
+
+        .meta-row {
+            font-size: 13px;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            margin-top: 2px;
+        }
+
+        /* Fixed Globe Icon */
+        .privacy-globe img{
+            width: 14px;
+            height: 14px;
+            filter: grayscale(0%), brightness(100%), saturate(100%);
+        }
+
+        /* Fixed Three Dots Alignment */
+        .three-dots {
+            position: absolute;
+            right: 0;
+            top: 0;
+            color: var(--text-secondary);
+            font-size: 20px;
+            letter-spacing: 1px;
+            cursor: pointer;
+        }
+
+        .review-body {
+            font-size: 15px;
+            line-height: 1.4;
+            color: var(--text-main);
+            margin-bottom: 16px;
+            white-space: pre-wrap;
+        }
+
+        .review-footer {
+            border-top: 1px solid #3e4042;
+            padding-top: 4px;
+            display: flex;
+            justify-content: space-around;
+        }
+
+        .footer-btn {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--text-secondary);
+            font-size: 14px;
+            font-weight: 600;
+            padding: 8px;
+            flex: 1;
+            justify-content: center;
+            border-radius: 4px;
+        }
+
+        /* Standard FB Icons */
+        .icon {
+            width: 18px;
+            height: 18px;
+            background-size: auto;
+            background-repeat: no-repeat;
+            display: inline-block;
+            filter: invert(70%);
+        }
+
+        .icon-like { background-image: url('https://static.xx.fbcdn.net/rsrc.php/v3/y7/r/7S-o57D_F96.png'); background-position: 0 -245px; }
+        .icon-comment { background-image: url('https://static.xx.fbcdn.net/rsrc.php/v3/y7/r/7S-o57D_F96.png'); background-position: 0 -207px; }
+        .icon-share { background-image: url('https://static.xx.fbcdn.net/rsrc.php/v3/y7/r/7S-o57D_F96.png'); background-position: 0 -264px; }
+
+        .hidden { display: none !important; }
+
+        .footer-btn img {
+            filter: contrast(0%);
+            width: 18px;
+            height: 18px;
+        }
+    </style>
+</head>
+<body>
+    <nav class="custom-navbar">
+    <a href="index.html" class="nav-link">Comment Generator</a>
+    <a href="review.html" class="nav-link active">Review Generator</a>
+</nav>
+    <div class="editor-container">
+        <h2 class="full-width">Review Editor</h2>
+        
+        <div>
+            <label>User Name</label>
+            <input type="text" id="nameIn" value="Sammi">
+        </div>
+        <div>
+            <label>Business Name</label>
+            <input type="text" id="bizIn" value="EVYA.">
+        </div>
+        <div>
+            <label>Time</label>
+            <input type="text" id="timeIn" value="Just now">
+        </div>
+        <div>
+            <label>Profile Pic</label>
+            <select id="imgMethod">
+                <option value="upload">Upload</option>
+                <option value="url">URL</option>
+            </select>
+        </div>
+
+        <div class="full-width">
+            <label>Review Text</label>
+            <textarea id="textIn" rows="3">আপনাদের রুট রিভাইভার হেয়ার অয়েল টা নেওয়া হয়েছে, আলহামদুলিল্লাহ ভালোই রেজাল্ট দিচ্ছে❤️</textarea>
+        </div>
+
+        <div class="full-width">
+            <input type="file" id="fileIn" accept="image/*">
+            <input type="text" id="urlIn" class="hidden" placeholder="Paste image link...">
+        </div>
+
+        <button class="btn-download" onclick="downloadReview()">Download Review PNG</button>
+    </div>
+
+    <div id="capture-area">
+        <div class="fb-review-card">
+            <div class="header">
+                <img id="pPic" class="profile-pic" src="https://i.pravatar.cc/100" alt="user">
+                <div class="header-text">
+                    <div class="name-row">
+                        <span id="pName">Sammi</span>
+                        <span class="recommends-tag">
+                            <img src="https://static.xx.fbcdn.net/rsrc.php/v4/y6/r/2CYZBtJFeT2.png?_nc_eui2=AeEpJX4s4lRemOvXw7m4inwt8gAuoGlcyc7yAC6gaVzJzkuU925nowV30m2CpSPpm7N99n02PFKZZ0O2OeOKUs8f" width="16" height="16">
+                            recommends 
+                            <span class="business-name" id="pBiz">EVYA.</span>
+                        </span>
+                    </div>
+                    <div class="meta-row">
+                        <span id="pTime">Just now</span> · 
+                        <span class="privacy-globe">
+<img src="data:image/png;base64,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" alt="globe-asia">                        </span>
+                    </div>
+                </div>
+                <div class="three-dots">•••</div>
+            </div>
+
+            <div class="review-body" id="pText">আপনাদের রুট রিভাইভার হেয়ার অয়েল টা নেওয়া হয়েছে, আলহামদুলিল্লাহ ভালোই রেজাল্ট দিচ্ছে❤️</div>
+
+            <div class="review-footer">
+                <div class="footer-btn">
+                    <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADAAAAAwCAYAAABXAvmHAAAACXBIWXMAAAsTAAALEwEAmpwYAAACjUlEQVR4nO2ZTYiNURzGf+Pj+ihE7GZhoXxNmUQUGylFsiE7K1lMI0JiIZlmJRtWJFOajJKPhKUdkY0muzEzhYxv5StDmNGp/62n03tv73vfd7zn5D516t7zP/c5z3Pfc95zzv9AE00Ej6nASeAN8Bq4C2wlIpwCxhNKFxFgPjBaw4Arewkcu0TsI6AVuCp1n4E5BIw+EXvU6irAsNTvIVBMBj6I0HaJ7Zf6KwSKtSJyBGiR2AqJDRAoukRkjxebJbGvBIrHInKHF6tIbJQAsU0E/kh407RK/COBYa6N+arAcwltNkm8n8BwUcS9MkM+DkibXgLCFm+ldUMpCTekTSeBwI3zFyLsUo12U4BP0m4xgaBHRL0DFtRot07aPSMQbATGRNj2lOvD+YkWNsM6HAJ+19lVjmfYGjys89tfwEvgMrC+CPH3U4pOM3Sq+JKB76zNmYagjzpt2ZmCt9sWtywmGsKQkBy2o2EStLMidrBtwB2Pt6HhpGPe7V34BwaqcDvXm8Lr5kRmpBU2EQYcVgqvW1+iMzBbeL/HaKBNeN2rNToDu4XXTeroDPQJ76EYDYwIr5vQURlY6p3YJsVmoFM4rzdKUqaBa0WkH8sy0AK8F87lsRloF763XkIsCgMH8+6ByjZwu6jEbxkGZlqqscq3KDYDHcL1JC9ZmvOA5jj/APNy9LfQS8e7FHwu6InsSIKJil1a6BMYs3R5r72/V9c5ySmWeP25z9PyGjjhiWu0uOzzA+CMXTkts4O6SxqsAU5792ju8yoKQJasRL/dgf3MafabJX4Lw3TgODCYkBdy358Cx6wd9tjdzcw+2w4PZhB/zzZxQV61brY/4hbwXI6JA8AFYEPZIpv4b/EX/zGvY0NPwr0AAAAASUVORK5CYII=" alt="facebook-like--v1">
+                    Like
+                </div>
+                <div class="footer-btn">
+<svg fill="none" stroke="#b0b3b8" stroke-width="2" width="18" height="18" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+  <path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z" />
+</svg>                    Comment
+                </div>
+                <div class="footer-btn">
+                    <i class="icon icon-share"></i>
+<svg fill="none" stroke="#b0b3b8" stroke-width="2" width="18" height="18" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+  <circle cx="18" cy="5" r="3" />
+  <circle cx="6" cy="12" r="3" />
+  <circle cx="18" cy="19" r="3" />
+  <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
+  <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
+</svg>                    Share
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('nameIn').oninput = e => document.getElementById('pName').innerText = e.target.value;
+        document.getElementById('bizIn').oninput = e => document.getElementById('pBiz').innerText = e.target.value;
+        document.getElementById('timeIn').oninput = e => document.getElementById('pTime').innerText = e.target.value;
+        document.getElementById('textIn').oninput = e => document.getElementById('pText').innerText = e.target.value;
+
+        document.getElementById('imgMethod').onchange = e => {
+            const isUrl = e.target.value === 'url';
+            document.getElementById('urlIn').classList.toggle('hidden', !isUrl);
+            document.getElementById('fileIn').classList.toggle('hidden', isUrl);
+        };
+
+        document.getElementById('urlIn').oninput = e => { if(e.target.value) document.getElementById('pPic').src = e.target.value; };
+        document.getElementById('fileIn').onchange = function() {
+            const reader = new FileReader();
+            reader.onload = e => document.getElementById('pPic').src = e.target.result;
+            reader.readAsDataURL(this.files[0]);
+        };
+
+        function downloadReview() {
+            html2canvas(document.querySelector("#capture-area"), {
+                backgroundColor: "#18191a",
+                scale: 3,
+                useCORS: true
+            }).then(canvas => {
+                const link = document.createElement('a');
+                link.download = 'fb-review-fixed.png';
+                link.href = canvas.toDataURL();
+                link.click();
+            });
+        }
+    </script>
+</body>
+</html>
